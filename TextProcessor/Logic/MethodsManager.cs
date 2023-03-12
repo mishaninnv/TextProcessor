@@ -2,11 +2,11 @@
 
 namespace TextProcessor.Logic;
 
-internal class MethodsController
+internal class MethodsManager
 {
     private Dictionary<string, Action> _methods;
 
-    public MethodsController()
+    public MethodsManager()
     {
         _methods = new Dictionary<string, Action>
         {

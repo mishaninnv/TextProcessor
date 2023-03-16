@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using System.Configuration;
 using System.Data.SqlClient;
 using TextProcessor.Models;
 
@@ -10,18 +9,20 @@ namespace TextProcessor.DataBase;
 /// </summary>
 internal class ManagerDb
 {
-    private string _connectionString;
-    private string _initConnectionString;
-    private string _databaseName;
-    private string _tableName;
+    private readonly string _host;
+    private readonly string _initDatabase = "master";
+    private readonly string _password = "89d5am!#IH";
+    private readonly string _connectDatabase = "TextProcessor";
+    private readonly string _tableName = "WordList";
+    private readonly string _connectionString;
 
-    public ManagerDb()
+    public ManagerDb(string host = "localhost")
     {
-        var confManager = ConfigurationManager.AppSettings;
-        _connectionString = confManager?.Get("ConnectionString") ?? string.Empty;
-        _initConnectionString = confManager?.Get("InitializeConnectionString") ?? string.Empty;
-        _databaseName = confManager?.Get("NameDb") ?? string.Empty;
-        _tableName = confManager?.Get("TableName") ?? string.Empty;
+        _host = host;
+        _connectionString = $"Server={_host};" +
+                            $"database={_connectDatabase};" +
+                            $"User Id=sa;" +
+                            $"Password={_password};";
     }
 
     /// <summary>
@@ -29,24 +30,39 @@ internal class ManagerDb
     /// </summary>
     internal void InitDb()
     {
-        using (var sqlConnection = new SqlConnection(_initConnectionString))
+        var initConnectionString = $"Server={_host};" +
+                                   $"database={_initDatabase};" +
+                                   $"User Id=sa;" +
+                                   $"Password={_password};";
+        using (var sqlConnection = new SqlConnection(initConnectionString))
         {
-            var initDb = $"IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = '{_databaseName}') BEGIN CREATE DATABASE [{_databaseName}] END";
+            var initDb = $"IF NOT EXISTS" +
+                            $"(SELECT * FROM sys.databases " +
+                            $"WHERE name = '{_connectDatabase}') " +
+                         $"BEGIN " +
+                         $"CREATE DATABASE [{_connectDatabase}] " +
+                         $"END";
             sqlConnection.Execute(initDb);
         }
 
         using (var sqlConnection = new SqlConnection(_connectionString))
         {
-            var initTable = $"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{_tableName}' and xtype='U') " +
+            var initTable = $"IF NOT EXISTS " +
+                                $"(SELECT * FROM sysobjects " +
+                                $"WHERE name='{_tableName}' and xtype='U') " +
                             $"BEGIN " +
                             $"CREATE TABLE {_tableName} " +
                                 $"(Id INT PRIMARY KEY IDENTITY (1, 1), " +
                                 $"{nameof(WordModel.Word)} NVARCHAR(15), " +
                                 $"{nameof(WordModel.Count)} INT) " +
                             $"END";
-            var initIndex = $"IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = 'index1' AND object_id = OBJECT_ID('{_tableName}')) " +
+            var initIndex = $"IF NOT EXISTS" +
+                                $"(SELECT * FROM sys.indexes " +
+                                $"WHERE name = 'index1' " +
+                                $"AND object_id = OBJECT_ID('{_tableName}')) " +
                             $"BEGIN " +
-                            $"CREATE UNIQUE INDEX index1 ON dbo.{_tableName} ({nameof(WordModel.Count)} DESC, {nameof(WordModel.Word)} ASC); " +
+                            $"CREATE UNIQUE INDEX index1 ON dbo.{_tableName} " +
+                            $"({nameof(WordModel.Count)} DESC, {nameof(WordModel.Word)} ASC); " +
                             $"END";
             sqlConnection.Execute(initTable);
             sqlConnection.Execute(initIndex);
@@ -61,10 +77,10 @@ internal class ManagerDb
     {
         DeleteList();
         var finishWordList = wordList.Where(x => x.Count > 2).ToList();
-        using (var sqlConnection = new SqlConnection(_connectionString))
-        {
-            sqlConnection.Execute($"INSERT INTO {_tableName} ({nameof(WordModel.Word)}, {nameof(WordModel.Count)}) VALUES(@{nameof(WordModel.Word)}, @{nameof(WordModel.Count)})", finishWordList);
-        }
+        using var sqlConnection = new SqlConnection(_connectionString);
+        var query = $"INSERT INTO {_tableName} ({nameof(WordModel.Word)}, {nameof(WordModel.Count)}) " +
+                    $"VALUES(@{nameof(WordModel.Word)}, @{nameof(WordModel.Count)})";
+        sqlConnection.Execute(query, finishWordList);
     }
 
     /// <summary>
@@ -73,19 +89,23 @@ internal class ManagerDb
     /// <param name="wordList"> Список для обновления. </param>
     internal void UpdateList(List<WordModel> wordList)
     {
-        using (var sqlConnection = new SqlConnection(_connectionString))
-        {
-            sqlConnection.Execute($"BEGIN TRAN;" +
-                                  $"UPDATE {_tableName} SET {nameof(WordModel.Count)} = @{nameof(WordModel.Count)} WHERE {nameof(WordModel.Word)} = @{nameof(WordModel.Word)}; " +
-                                  $"BEGIN " +
-                                    $"IF NOT EXISTS (SELECT * FROM {_tableName} WHERE {nameof(WordModel.Word)} = @{nameof(WordModel.Word)}) " +
-                                    $"BEGIN " +
-                                    $"INSERT INTO {_tableName} ({nameof(WordModel.Word)}, {nameof(WordModel.Count)}) VALUES(@{nameof(WordModel.Word)}, @{nameof(WordModel.Count)})" +
-                                    $"END " +
-                                  $"END " +
-                                  $"DELETE FROM {_tableName} WHERE {nameof(WordModel.Count)} < 3;" +
-                                  $"COMMIT TRAN;", wordList);
-        }
+        using var sqlConnection = new SqlConnection(_connectionString);
+        var query = $"BEGIN TRAN;" +
+                    $"UPDATE {_tableName} SET {nameof(WordModel.Count)} = @{nameof(WordModel.Count)} " +
+                    $"WHERE {nameof(WordModel.Word)} = @{nameof(WordModel.Word)}; " +
+                    $"BEGIN " +
+                        $"IF NOT EXISTS " +
+                        $"(SELECT * FROM {_tableName} " +
+                        $"WHERE {nameof(WordModel.Word)} = @{nameof(WordModel.Word)}) " +
+                        $"BEGIN " +
+                            $"INSERT INTO {_tableName} ({nameof(WordModel.Word)}, {nameof(WordModel.Count)}) " +
+                            $"VALUES(@{nameof(WordModel.Word)}, @{nameof(WordModel.Count)})" +
+                        $"END " +
+                    $"END " +
+                    $"DELETE FROM {_tableName} " +
+                    $"WHERE {nameof(WordModel.Count)} < 3;" +
+                    $"COMMIT TRAN;";
+        sqlConnection.Execute(query, wordList);
     }
 
     /// <summary>
@@ -93,10 +113,8 @@ internal class ManagerDb
     /// </summary>
     internal void DeleteList()
     {
-        using (var sqlConnection = new SqlConnection(_connectionString))
-        {
-            sqlConnection.Execute($"TRUNCATE TABLE {_tableName}");
-        }
+        using var sqlConnection = new SqlConnection(_connectionString);
+        sqlConnection.Execute($"TRUNCATE TABLE {_tableName}");
     }
 
     /// <summary>
@@ -106,9 +124,9 @@ internal class ManagerDb
     /// <returns> Перечисление до 5 найденных слов (в порядке убывания их частоты упоминания в словаре). </returns>
     internal IEnumerable<WordModel> GetWords(string prefix)
     {
-        using (var sqlConnection = new SqlConnection(_connectionString))
-        {
-            return sqlConnection.Query<WordModel>($"SELECT TOP(5) {nameof(WordModel.Word)} FROM {_tableName} WHERE {nameof(WordModel.Word)} LIKE N'{prefix}%'");
-        }     
+        using var sqlConnection = new SqlConnection(_connectionString);
+        var query = $"SELECT TOP(5) {nameof(WordModel.Word)} FROM {_tableName} " +
+                    $"WHERE {nameof(WordModel.Word)} LIKE N'{prefix}%'";
+        return sqlConnection.Query<WordModel>(query);
     }
 }

@@ -1,29 +1,15 @@
 ﻿using TextProcessor.DataBase;
 using TextProcessor.Logic;
 
-var manager = new MethodsManager();
-var initDb = new ManagerDb();
-initDb.InitDb();
+var test = new string[] { "localhost", "1433" }; // тестовые данные
 
-try
+if (test.Length == 2 && int.TryParse(test[1], out var port))
 {
-    switch (args.Length)
-    {
-        case 0:
-            manager.GetData();
-            break;
-        case 1:
-            manager.CallMethod(args[0]);
-            break;
-        case 2:
-            manager.CallMethod(args[0], args[1]);
-            break;
-        default:
-            Console.WriteLine("Вы ввели более 2х параметров. Попробуйте снова.");
-            break;
-    }
-}
-catch (Exception e)
-{ 
-    Console.Error.WriteLine(e.Message);
+    var managerDb = new ManagerDb(test[0]);
+    managerDb.InitDb();
+    var manager = new LogicManager(managerDb);
+    // передать параметры которые получили от пользователя
+    // возможно надо как то записать в апп конфиг строку подключения
+    manager.StartUserInput();
+    LogicManager.StartServer(port);
 }

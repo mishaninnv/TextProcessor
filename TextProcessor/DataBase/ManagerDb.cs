@@ -16,6 +16,10 @@ internal class ManagerDb
     private readonly string _tableName = "WordList";
     private readonly string _connectionString;
 
+    /// <summary>
+    /// Класс содержащий методы для работы с БД.
+    /// </summary>
+    /// <param name="host"> Путь к базе данных. </param>
     public ManagerDb(string host = "localhost")
     {
         _host = host;
@@ -23,50 +27,7 @@ internal class ManagerDb
                             $"database={_connectDatabase};" +
                             $"User Id=sa;" +
                             $"Password={_password};";
-    }
-
-    /// <summary>
-    /// Инициализирует базу данных с таблицей если таковой нет.
-    /// </summary>
-    internal void InitDb()
-    {
-        var initConnectionString = $"Server={_host};" +
-                                   $"database={_initDatabase};" +
-                                   $"User Id=sa;" +
-                                   $"Password={_password};";
-        using (var sqlConnection = new SqlConnection(initConnectionString))
-        {
-            var initDb = $"IF NOT EXISTS" +
-                            $"(SELECT * FROM sys.databases " +
-                            $"WHERE name = '{_connectDatabase}') " +
-                         $"BEGIN " +
-                         $"CREATE DATABASE [{_connectDatabase}] " +
-                         $"END";
-            sqlConnection.Execute(initDb);
-        }
-
-        using (var sqlConnection = new SqlConnection(_connectionString))
-        {
-            var initTable = $"IF NOT EXISTS " +
-                                $"(SELECT * FROM sysobjects " +
-                                $"WHERE name='{_tableName}' and xtype='U') " +
-                            $"BEGIN " +
-                            $"CREATE TABLE {_tableName} " +
-                                $"(Id INT PRIMARY KEY IDENTITY (1, 1), " +
-                                $"{nameof(WordModel.Word)} NVARCHAR(15), " +
-                                $"{nameof(WordModel.Count)} INT) " +
-                            $"END";
-            var initIndex = $"IF NOT EXISTS" +
-                                $"(SELECT * FROM sys.indexes " +
-                                $"WHERE name = 'index1' " +
-                                $"AND object_id = OBJECT_ID('{_tableName}')) " +
-                            $"BEGIN " +
-                            $"CREATE UNIQUE INDEX index1 ON dbo.{_tableName} " +
-                            $"({nameof(WordModel.Count)} DESC, {nameof(WordModel.Word)} ASC); " +
-                            $"END";
-            sqlConnection.Execute(initTable);
-            sqlConnection.Execute(initIndex);
-        }
+        InitDb();
     }
 
     /// <summary>
@@ -84,7 +45,7 @@ internal class ManagerDb
     }
 
     /// <summary>
-    /// Обновить имеющийся список данными из нового списка. При наличии данных увеличивает вес слова, при отсутсвии добавляет.
+    /// Обновить количество упоминаний слова из нового списка, добавить отсутсвующие слова.
     /// </summary>
     /// <param name="wordList"> Список для обновления. </param>
     internal void UpdateList(List<WordModel> wordList)
@@ -128,5 +89,51 @@ internal class ManagerDb
         var query = $"SELECT TOP(5) {nameof(WordModel.Word)} FROM {_tableName} " +
                     $"WHERE {nameof(WordModel.Word)} LIKE N'{prefix}%'";
         return sqlConnection.Query<WordModel>(query);
+    }
+
+    /// <summary>
+    /// Инициализирует базу данных с таблицей если таковой нет.
+    /// </summary>
+    private void InitDb()
+    {
+        var initConnectionString = $"Server={_host};" +
+                                   $"database={_initDatabase};" +
+                                   $"User Id=sa;" +
+                                   $"Password={_password};";
+        using (var sqlConnection = new SqlConnection(initConnectionString))
+        {
+            var initDb = $"IF NOT EXISTS" +
+                            $"(SELECT * FROM sys.databases " +
+                            $"WHERE name = '{_connectDatabase}') " +
+                         $"BEGIN " +
+                         $"CREATE DATABASE [{_connectDatabase}] " +
+                         $"END";
+            sqlConnection.Execute(initDb);
+        }
+
+        using (var sqlConnection = new SqlConnection(_connectionString))
+        {
+            var initTable = $"IF NOT EXISTS " +
+                                $"(SELECT * FROM sysobjects " +
+                                $"WHERE name='{_tableName}' and xtype='U') " +
+                            $"BEGIN " +
+                            $"CREATE TABLE {_tableName} " +
+                                $"(Id INT PRIMARY KEY IDENTITY (1, 1), " +
+                                $"{nameof(WordModel.Word)} NVARCHAR(15), " +
+                                $"{nameof(WordModel.Count)} INT) " +
+                            $"END";
+            sqlConnection.Execute(initTable);
+
+            var initIndex = $"IF NOT EXISTS" +
+                                $"(SELECT * FROM sys.indexes " +
+                                $"WHERE name = 'index1' " +
+                                $"AND object_id = OBJECT_ID('{_tableName}')) " +
+                            $"BEGIN " +
+                            $"CREATE UNIQUE INDEX index1 ON dbo.{_tableName} " +
+                            $"({nameof(WordModel.Count)} DESC, {nameof(WordModel.Word)} ASC); " +
+                            $"END";
+
+            sqlConnection.Execute(initIndex);
+        }
     }
 }

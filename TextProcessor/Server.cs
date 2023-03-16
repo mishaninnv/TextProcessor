@@ -5,38 +5,52 @@ using TextProcessor.DataBase;
 
 namespace TextProcessor;
 
+/// <summary>
+/// Класс регистрирующий слушателя по заданному порту.
+/// </summary>
 internal class Server
 {
     private readonly ManagerDb _managerDb;
     private readonly int _port;
+    private readonly TcpListener _tcpListener;
 
+    /// <summary>
+    /// Класс регистрирующий слушателя по заданному порту.
+    /// </summary>
+    /// <param name="port"> Порт для прослушивания. </param>
     internal Server(int port)
     {
         _managerDb = new ManagerDb();
         _port = port;
+        _tcpListener = new TcpListener(IPAddress.Any, _port);
     }
 
+    /// <summary>
+    /// Запустить сервер ожидающий подключения клиентов.
+    /// </summary>
     async internal void Start()
     {
-        var tcpListener = new TcpListener(IPAddress.Any, _port);
-
         try
         {
-            tcpListener.Start();
+            _tcpListener.Start();
 
             while (true)
             {
-                var tcpClient = await tcpListener.AcceptTcpClientAsync();
+                var tcpClient = await _tcpListener.AcceptTcpClientAsync();
                 Task.Run(async () => await ProcessClientAsync(tcpClient));
             }
         }
         finally
         {
-            tcpListener.Stop();
+            _tcpListener.Stop();
         }
     }
 
-    async Task ProcessClientAsync(TcpClient tcpClient)
+    /// <summary>
+    /// Метод обработки запроса клиента.
+    /// </summary>
+    /// <param name="tcpClient"> Данные о подключении клиента. </param>
+    private async Task ProcessClientAsync(TcpClient tcpClient)
     {
         var stream = tcpClient.GetStream();
         var response = new List<byte>();

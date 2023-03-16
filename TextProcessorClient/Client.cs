@@ -3,18 +3,29 @@ using System.Text;
 
 namespace TextProcessorClient;
 
+/// <summary>
+/// Класс отвечающий за работу клиента с сервером по заданному пути и порту.
+/// </summary>
 internal class Client
 {
     private readonly string _host;
     private readonly int _port;
     private bool _isRun;
 
+    /// <summary>
+    /// Класс отвечающий за работу клиента с сервером по заданному пути и порту.
+    /// </summary>
+    /// <param name="host"> Путь к серверу. </param>
+    /// <param name="port"> Порт сервера. </param>
     internal Client(string host, int port)
     {
         _host = host;
         _port = port;
     }
 
+    /// <summary>
+    /// Подключение к серверу
+    /// </summary>
     async internal void Start()
     {
         using var tcpClient = new TcpClient();
@@ -54,6 +65,10 @@ internal class Client
         await stream.WriteAsync(Encoding.UTF8.GetBytes("END\n"));
     }
 
+    /// <summary>
+    /// Ожидание пользовательского ввода.
+    /// </summary>
+    /// <returns> Строка введенная пользователем. </returns>
     private string GetUserInput()
     {
         var retString = new StringBuilder();

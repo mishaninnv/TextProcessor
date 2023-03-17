@@ -10,7 +10,7 @@ internal class Client
 {
     private readonly string _host;
     private readonly int _port;
-    private bool _isRun;
+    private bool _isRun = true;
 
     /// <summary>
     /// Класс отвечающий за работу клиента с сервером по заданному пути и порту.
@@ -24,46 +24,19 @@ internal class Client
     }
 
     /// <summary>
-    /// Подключение к серверу
+    /// Запуск работы клиента.
     /// </summary>
-    async internal void Start()
-    {
-        using var tcpClient = new TcpClient();
-        await tcpClient.ConnectAsync(_host, _port);
-        var stream = tcpClient.GetStream();
-
-        var response = new List<byte>();
-        int bytesRead = 10;
-
-        while (_isRun)
+    internal Task Start() =>
+        Task.Run(() =>
         {
-            var word = GetUserInput();
-
-            if (!string.IsNullOrWhiteSpace(word))
+            while (_isRun)
             {
-                var data = Encoding.UTF8.GetBytes(word + '\n');
-
-                await stream.WriteAsync(data);
-
-                while ((bytesRead = stream.ReadByte()) != '\n')
-                {
-                    response.Add((byte)bytesRead);
-                }
-                var responseData = Encoding.UTF8.GetString(response.ToArray());
-                var splitResponseData = responseData.Split(" ");
-                foreach (var value in splitResponseData)
-                {
-                    Console.WriteLine($"{value}");
-                }
-                response.Clear();
+                var word = GetUserInput();
+                SendRequest(word);
             }
-            else
-            {
-                _isRun = false;
-            }
-        }
-        await stream.WriteAsync(Encoding.UTF8.GetBytes("END\n"));
-    }
+        });
+
+
 
     /// <summary>
     /// Ожидание пользовательского ввода.
@@ -72,7 +45,7 @@ internal class Client
     private string GetUserInput()
     {
         var retString = new StringBuilder();
-        while(true)
+        while (true)
         {
             var readKeyResult = Console.ReadKey(true);
 
@@ -83,7 +56,13 @@ internal class Client
             }
             else if (readKeyResult.Key == ConsoleKey.Enter)
             {
+                Console.WriteLine();
                 break;
+            }
+            else if (readKeyResult.Key == ConsoleKey.Backspace)
+            {
+                retString.Remove(retString.Length - 1, 1);
+                Console.Write("\b \b");
             }
             else
             {
@@ -92,5 +71,42 @@ internal class Client
             }
         }
         return retString.ToString();
+    }
+
+    /// <summary>
+    /// Отправка запроса на сервер.
+    /// </summary>
+    /// <param name="word"> Запрашиваемая конструкция. Метод с параметром. </param>
+    private async void SendRequest(string word)
+    {
+        using var tcpClient = new TcpClient();
+        await tcpClient.ConnectAsync(_host, _port);
+        var stream = tcpClient.GetStream();
+
+        var response = new List<byte>();
+        var bytesRead = 10;
+        if (!string.IsNullOrWhiteSpace(word))
+        {
+            var data = Encoding.UTF8.GetBytes(word + '\n');
+
+            await stream.WriteAsync(data);
+
+            while ((bytesRead = stream.ReadByte()) != '\n')
+            {
+                response.Add((byte)bytesRead);
+            }
+            var responseData = Encoding.UTF8.GetString(response.ToArray());
+            var splitResponseData = responseData.Split(" ");
+            foreach (var value in splitResponseData)
+            {
+                Console.WriteLine($"{value}");
+            }
+            response.Clear();
+        }
+        else
+        {
+            _isRun = false;
+        }
+        await stream.WriteAsync(Encoding.UTF8.GetBytes("END\n"));
     }
 }

@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using TextProcessor.DataBase;
+using System.Globalization;
 
 namespace TextProcessor;
 
@@ -70,10 +71,11 @@ internal class Server
             if (queryValues.Length == 2 
                 && queryValues[0].ToLower().Equals("get"))
             {
-                result += _managerDb
+                var query = _managerDb
                     .GetWords(queryValues[1])
                     .Select(x => x.Word)
-                    .ToArray().ToString();
+                    .ToArray();
+                result += string.Join(" ", query);
             }
             else
             {

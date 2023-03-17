@@ -32,17 +32,31 @@ internal class LogicManager
         {
             while (true)
             {
+                _wordList.Clear();
                 var userInput = Console.ReadLine();
-                var values = userInput?.Split(" ");
+                var values = userInput?.Split(" ")
+                                       .Where(x => x.Length > 0)
+                                       .ToArray();
                 if (values?.Length > 0 && values?.Length <= 2)
                 {
                     if (values.Length == 2)
                     {
-                        var listManager = new ListManager(values[1]);
-                        _wordList = listManager.WordList;
+                        try 
+                        {
+                            var listManager = new ListManager(values[1]);
+                            _wordList = listManager.WordList;
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                            continue;
+                        }
                     }
-                    var callMethod = _methods[values[0]];
-                    callMethod?.Invoke();
+                    if (_methods.Keys.Contains(values[0]))
+                    {
+                        var callMethod = _methods[values[0]];
+                        callMethod?.Invoke();
+                    }
                 }
                 else
                 {

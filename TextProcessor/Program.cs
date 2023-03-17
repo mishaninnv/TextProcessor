@@ -1,10 +1,12 @@
 ﻿using TextProcessor.DataBase;
 using TextProcessor.Logic;
 
-if (args.Length == 2 && int.TryParse(args[1], out var port))
+var test = new string[] { "localhost", "8888" };
+
+if (test.Length == 2 && int.TryParse(test[1], out var port))
 {
-    var managerDb = new ManagerDb(args[0]);
+    var managerDb = new ManagerDb(test[0]);
     var manager = new LogicManager(managerDb);
-    manager.StartUserInput();
     LogicManager.StartServer(port);
+    await manager.StartUserInput();
 }

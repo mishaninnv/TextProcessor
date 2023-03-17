@@ -36,6 +36,11 @@ internal class ManagerDb
     /// <param name="wordList"> Список для занесения в БД. </param>
     internal void CreateList(List<WordModel> wordList)
     {
+        if (wordList.Count == 0)
+        {
+            return;
+        }
+
         DeleteList();
         var finishWordList = wordList.Where(x => x.Count > 2).ToList();
         using var sqlConnection = new SqlConnection(_connectionString);

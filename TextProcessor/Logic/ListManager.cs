@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 using TextProcessor.Models;
 
 namespace TextProcessor.Logic;
@@ -11,40 +12,61 @@ internal class ListManager
     /// <summary>
     /// Список слов
     /// </summary>
-    internal List<WordModel> WordList { get; private set; }
+    internal static List<WordModel> WordList { get; private set; } = new List<WordModel>();
 
     /// <summary>
-    /// Класс отвечающий за работу со списком слов
-    /// </summary>
-    /// <param name="pathToFile"> Полный путь к файлу со списком слов. </param>
-    internal ListManager(string pathToFile)
-    {
-        WordList = new List<WordModel>();
-        SetWordsFromFile(pathToFile);
-    }
-
-    /// <summary>
-    /// Запись в лист слов, содержащихся в документе (не менее 3х и не более 
+    /// Запись в список слов, содержащихся в документе (не менее 3х и не более 
     /// 15ти символов, встречающиеся не менее 3х раз).
     /// </summary>
     /// <param name="pathToFile"> Полный путь к документу. </param>
     /// <exception cref="FileNotFoundException"> 
     /// Выбрасывается при отсутствии файла по заданному пути 
     /// </exception>
-    private void SetWordsFromFile(string pathToFile)
+    internal static void SetWordsFromFile(string pathToFile)
     {
         if (!File.Exists(pathToFile))
         {
             throw new FileNotFoundException();
         }
 
-        var textFromFile = File.ReadAllText(pathToFile, System.Text.Encoding.UTF8);
+        if (GetFileEncoding(pathToFile) == Encoding.UTF8)
+        {
+            var textFromFile = File.ReadAllText(pathToFile, Encoding.UTF8);
 
-        WordList = Regex.Matches(textFromFile, "[a-zA-Zа-яёА-ЯЁ]{3,}")
-            .Where(x => x.Length < 15)
-            .Select(x => x.ToString().ToLower())
-            .GroupBy(x => x)
-            .Select(x => new WordModel { Word = x.Key, Count = x.Count() })
-            .ToList();
+            WordList = Regex.Matches(textFromFile, "[a-zA-Zа-яёА-ЯЁ]{3,}")
+                .Where(x => x.Length < 15)
+                .Select(x => x.ToString().ToLower())
+                .GroupBy(x => x)
+                .Select(x => new WordModel { Word = x.Key, Count = x.Count() })
+                .ToList();
+        }
+        else
+        {
+            throw new FormatException("Неверная кодировка файла.");
+        }
+
+    }
+
+
+    /// <summary>
+    /// Получить кодировку файла.
+    /// </summary>
+    /// <param name="pathToFile"></param>
+    /// <returns></returns>
+    private static Encoding GetFileEncoding(string pathToFile)
+    {
+
+        using (var fs = File.OpenRead(pathToFile))
+        {
+            Ude.CharsetDetector cdet = new Ude.CharsetDetector();
+            cdet.Feed(fs);
+            cdet.DataEnd();
+            var fileEncoding = cdet.Charset;
+            if (fileEncoding.Equals("UTF-8"))
+            {
+                return Encoding.UTF8;
+            }
+            return Encoding.Default;
+        }
     }
 }

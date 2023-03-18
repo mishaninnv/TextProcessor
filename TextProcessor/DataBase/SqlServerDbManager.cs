@@ -7,7 +7,7 @@ namespace TextProcessor.DataBase;
 /// <summary>
 /// Класс содержащий методы для работы с БД.
 /// </summary>
-internal class ManagerDb
+internal class SqlServerDbManager : IDbManager
 {
     private readonly string _host;
     private readonly string _initDatabase = "master";
@@ -20,7 +20,7 @@ internal class ManagerDb
     /// Класс содержащий методы для работы с БД.
     /// </summary>
     /// <param name="host"> Путь к базе данных. </param>
-    public ManagerDb(string host = "localhost")
+    internal SqlServerDbManager(string host = "localhost")
     {
         _host = host;
         _connectionString = $"Server={_host};" +
@@ -34,7 +34,7 @@ internal class ManagerDb
     /// Запись данных списка в БД. Удаляет ранее записанные данные при их наличии.
     /// </summary>
     /// <param name="wordList"> Список для занесения в БД. </param>
-    internal void CreateList(List<WordModel> wordList)
+    public void CreateList(List<WordModel> wordList)
     {
         if (wordList.Count == 0)
         {
@@ -53,8 +53,13 @@ internal class ManagerDb
     /// Обновить количество упоминаний слова из нового списка, добавить отсутсвующие слова.
     /// </summary>
     /// <param name="wordList"> Список для обновления. </param>
-    internal void UpdateList(List<WordModel> wordList)
+    public void UpdateList(List<WordModel> wordList)
     {
+        if (wordList.Count == 0)
+        {
+            return;
+        }
+
         using var sqlConnection = new SqlConnection(_connectionString);
         var query = $"BEGIN TRAN;" +
                     $"UPDATE {_tableName} SET {nameof(WordModel.Count)} = @{nameof(WordModel.Count)} " +
@@ -77,7 +82,7 @@ internal class ManagerDb
     /// <summary>
     /// Удаление всех полей БД, сбрасывает значение счетчиков.(AUTOINCREMENT / IDENTITY)
     /// </summary>
-    internal void DeleteList()
+    public void DeleteList()
     {
         using var sqlConnection = new SqlConnection(_connectionString);
         sqlConnection.Execute($"TRUNCATE TABLE {_tableName}");
@@ -87,8 +92,9 @@ internal class ManagerDb
     /// Получение данных из БД по слову(началу слова)
     /// </summary>
     /// <param name="prefix"> Слово(начало слова) для поиска. </param>
-    /// <returns> Перечисление до 5 найденных слов (в порядке убывания их частоты упоминания в словаре). </returns>
-    internal IEnumerable<WordModel> GetWords(string prefix)
+    /// <returns> Перечисление до 5 найденных слов (в порядке убывания 
+    /// частоты их упоминания в словаре). </returns>
+    public IEnumerable<WordModel> GetWords(string prefix)
     {
         using var sqlConnection = new SqlConnection(_connectionString);
         var query = $"SELECT TOP(5) {nameof(WordModel.Word)} FROM {_tableName} " +
@@ -97,7 +103,7 @@ internal class ManagerDb
     }
 
     /// <summary>
-    /// Инициализирует базу данных с таблицей если таковой нет.
+    /// Инициализирует базу данных с таблицей если таких нет.
     /// </summary>
     private void InitDb()
     {

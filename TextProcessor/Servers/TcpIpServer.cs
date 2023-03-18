@@ -2,48 +2,46 @@
 using System.Net;
 using System.Text;
 using TextProcessor.DataBase;
-using System.Globalization;
+using TextProcessor.Models;
 
-namespace TextProcessor;
+namespace TextProcessor.Servers;
 
 /// <summary>
-/// Класс регистрирующий слушателя по заданному порту.
+/// Класс обрабатывающий клиента по заданному порту (TCP/IP v4).
 /// </summary>
-internal class Server
+internal class TcpIpServer : IServer
 {
-    private readonly ManagerDb _managerDb;
-    private readonly int _port;
-    private readonly TcpListener _tcpListener;
+    private readonly IDbManager _managerDb;
 
     /// <summary>
-    /// Класс регистрирующий слушателя по заданному порту.
+    /// Класс обрабатывающий клиента по заданному порту (TCP/IP v4).
     /// </summary>
-    /// <param name="port"> Порт для прослушивания. </param>
-    internal Server(int port)
+    /// <param name="dbManager"> Менеджер используемой БД. </param>
+    internal TcpIpServer(IDbManager dbManager)
     {
-        _managerDb = new ManagerDb();
-        _port = port;
-        _tcpListener = new TcpListener(IPAddress.Any, _port);
+        _managerDb = dbManager;
     }
 
     /// <summary>
     /// Запустить сервер ожидающий подключения клиентов.
     /// </summary>
-    async internal void Start()
+    /// <param name="settings"> Настройки для запуска сервера. </param>
+    async public void Start(ServerSettingsModel settings)
     {
+        var tcpListener = new TcpListener(IPAddress.Any, settings.Port);
         try
         {
-            _tcpListener.Start();
+            tcpListener.Start();
 
             while (true)
             {
-                var tcpClient = await _tcpListener.AcceptTcpClientAsync();
+                var tcpClient = await tcpListener.AcceptTcpClientAsync();
                 Task.Run(async () => await ProcessClientAsync(tcpClient));
             }
         }
         finally
         {
-            _tcpListener.Stop();
+            tcpListener.Stop();
         }
     }
 
@@ -68,7 +66,7 @@ internal class Server
 
             var queryValues = responseQuery.Split(' ');
             var result = string.Empty;
-            if (queryValues.Length == 2 
+            if (queryValues.Length == 2
                 && queryValues[0].ToLower().Equals("get"))
             {
                 var query = _managerDb
@@ -80,7 +78,7 @@ internal class Server
             else
             {
                 result += "Запрашиваемый метод отсутсвует.";
-            } 
+            }
 
             result += '\n';
             await stream.WriteAsync(Encoding.UTF8.GetBytes(result));

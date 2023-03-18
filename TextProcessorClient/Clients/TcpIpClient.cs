@@ -17,8 +17,7 @@ internal class TcpIpClient : IClient
     /// <summary>
     /// Запуск работы клиента.
     /// </summary>
-    /// <param name="host"> Путь к серверу. </param>
-    /// <param name="port"> Порт сервера. </param>
+    /// <param name="settings"> Настройки клиента. </param>
     public Task Start(ClientSettingsModel settings) =>
         Task.Run(() =>
         {

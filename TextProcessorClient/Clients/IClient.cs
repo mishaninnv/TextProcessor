@@ -12,6 +12,5 @@ internal interface IClient
     /// </summary>
     /// <param name="host"> Путь к серверу. </param>
     /// <param name="port"> Порт сервера. </param>
-    /// <returns></returns>
     public Task Start(ClientSettingsModel settings);
 }

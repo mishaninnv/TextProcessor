@@ -1,5 +1,6 @@
 ﻿using TextProcessor.DataBase;
 using TextProcessor.Models;
+using TextProcessor.Servers;
 
 namespace TextProcessor.Logic;
 
@@ -9,10 +10,9 @@ namespace TextProcessor.Logic;
 internal class LogicManager
 {
     private readonly Dictionary<string, Action> _methods;
-    private readonly ManagerDb _managerDb;
-    private List<WordModel> _wordList;
+    private readonly IDbManager _managerDb;
 
-    public LogicManager(ManagerDb managerDb)
+    public LogicManager(IDbManager managerDb)
     {
         _methods = new Dictionary<string, Action>
         {
@@ -21,7 +21,6 @@ internal class LogicManager
             { nameof(Delete), Delete }
         };
         _managerDb = managerDb;
-        _wordList = new List<WordModel>();
     }
 
     /// <summary>
@@ -32,7 +31,6 @@ internal class LogicManager
         {
             while (true)
             {
-                _wordList.Clear();
                 var userInput = Console.ReadLine();
                 var values = userInput?.Split(" ")
                                        .Where(x => x.Length > 0)
@@ -43,8 +41,7 @@ internal class LogicManager
                     {
                         try 
                         {
-                            var listManager = new ListManager(values[1]);
-                            _wordList = listManager.WordList;
+                            ListManager.SetWordsFromFile(values[1]);
                         }
                         catch (Exception e)
                         {
@@ -69,14 +66,13 @@ internal class LogicManager
     /// Запуск сервера по заданному порту.
     /// </summary>
     /// <param name="port"> Значение порта по которому будет слушать сервер. </param>
-    internal static Task StartServer(int port) =>
+    internal static Task StartServer(IServer server, ServerSettingsModel settings) =>
         Task.Run(() =>
         {
-            var server = new Server(port);
-            server.Start();
+            server.Start(settings);
         });
 
-    private void Create() => _managerDb.CreateList(_wordList);
-    private void Update() => _managerDb.UpdateList(_wordList);
+    private void Create() => _managerDb.CreateList(ListManager.WordList);
+    private void Update() => _managerDb.UpdateList(ListManager.WordList);
     private void Delete() => _managerDb.DeleteList();
 }

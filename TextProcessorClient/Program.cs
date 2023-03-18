@@ -1,11 +1,12 @@
-﻿using TextProcessorClient;
+﻿using TextProcessorClient.Clients;
+using TextProcessorClient.Logic;
+using TextProcessorClient.Models;
 
-var test = new string[] { "127.0.0.1", "8888" }; // тестовые данные
-
-if (test.Length == 2 && int.TryParse(test[1], out var port))
+if (args.Length == 2 && int.TryParse(args[1], out var port))
 {
-    var client = new Client(test[0], port);
-    await client.Start();
+    var settings = new ClientSettingsModel() { Host = args[1], Port = port };
+    var clientManager = new ClientsManager(new TcpIpClient(), settings);
+    clientManager.StartClient();
 }
 else 
 {

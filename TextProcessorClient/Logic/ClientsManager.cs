@@ -25,7 +25,7 @@ internal class ClientsManager
     /// <summary>
     /// Запуск работы клиента.
     /// </summary>
-    internal async void StartClient()
+    internal async Task StartClient()
     {
         await _client.Start(_settings);
     }

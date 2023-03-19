@@ -34,7 +34,7 @@ internal class ListManager
             var textFromFile = File.ReadAllText(pathToFile, Encoding.UTF8);
 
             WordList = Regex.Matches(textFromFile, "[a-zA-Zа-яёА-ЯЁ]{3,}")
-                .Where(x => x.Length < 15)
+                .Where(x => x.Length <= 15)
                 .Select(x => x.ToString().ToLower())
                 .GroupBy(x => x)
                 .Select(x => new WordModel { Word = x.Key, Count = x.Count() })

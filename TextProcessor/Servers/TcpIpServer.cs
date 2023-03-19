@@ -70,14 +70,14 @@ internal class TcpIpServer : IServer
                 && queryValues[0].ToLower().Equals("get"))
             {
                 var query = _managerDb
-                    .GetWords(queryValues[1])
+                    .GetWords(queryValues[1].ToLower())
                     .Select(x => x.Word)
                     .ToArray();
                 result += string.Join(" ", query);
             }
             else
             {
-                result += "Запрашиваемый метод отсутсвует.";
+                result += "Некорректный запрос.";
             }
 
             result += '\n';

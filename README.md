@@ -18,8 +18,8 @@ TextProcessor - приложение состоящее из двух часте
     
 создаем и запускаем контейнер
 
-    docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=89d5am!#IH" 
-    -p 1433:1433 --name mssql -d mcr.microsoft.com/mssql/server:2022-latest
+    docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=89d5am!#IH" -p 1433:1433 --name mssql -d mcr.microsoft.com/mssql/server:2022-latest
+    
 указанный пароль установлен в серверном приложении по умолчанию, база займет 1433 порт компьютера.
 </div>
 <div>

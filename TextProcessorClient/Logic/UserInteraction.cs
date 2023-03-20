@@ -24,10 +24,13 @@ internal class UserInteraction
                 Console.WriteLine();
                 break;
             }
-            else if (readKeyResult.Key == ConsoleKey.Backspace && retString.Length > 0)
+            else if (readKeyResult.Key == ConsoleKey.Backspace)
             {
-                retString.Remove(retString.Length - 1, 1);
-                Console.Write("\b \b");
+                if (retString.Length > 0)
+                {
+                    retString.Remove(retString.Length - 1, 1);
+                    Console.Write("\b \b");
+                }
             }
             else
             {

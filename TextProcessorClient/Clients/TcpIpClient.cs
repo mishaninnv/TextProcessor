@@ -41,7 +41,7 @@ internal class TcpIpClient : IClient
         var stream = tcpClient.GetStream();
 
         var response = new List<byte>();
-        var bytesRead = 10;
+        var bytesRead = 15;
         if (!string.IsNullOrWhiteSpace(word))
         {
             var data = Encoding.UTF8.GetBytes(word + '\n');

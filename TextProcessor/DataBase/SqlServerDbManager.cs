@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Configuration;
 using System.Data.SqlClient;
 using TextProcessor.Models;
 
@@ -9,11 +10,9 @@ namespace TextProcessor.DataBase;
 /// </summary>
 internal class SqlServerDbManager : IDbManager
 {
-    private readonly string _host;
-    private readonly string _initDatabase = "master";
-    private readonly string _password = "89d5am!#IH";
-    private readonly string _connectDatabase = "TextProcessor";
-    private readonly string _tableName = "WordList";
+    private readonly string _password;
+    private readonly string _connectDatabase;
+    private readonly string _tableName;
     private readonly string _connectionString;
 
     /// <summary>
@@ -22,12 +21,15 @@ internal class SqlServerDbManager : IDbManager
     /// <param name="host"> Путь к базе данных. </param>
     internal SqlServerDbManager(string host = "localhost")
     {
-        _host = host;
-        _connectionString = $"Server={_host};" +
+        _password = ConfigurationManager.AppSettings["Password"] ?? "89d5am!#IH";
+        _connectDatabase = ConfigurationManager.AppSettings["NameDb"] ?? "TextProcessor";
+        _tableName = ConfigurationManager.AppSettings["TableName"] ?? "WordList";
+
+        _connectionString = $"Server={host};" +
                             $"database={_connectDatabase};" +
                             $"User Id=sa;" +
                             $"Password={_password};";
-        InitDb();
+        InitDb(host);
     }
 
     /// <summary>
@@ -80,7 +82,7 @@ internal class SqlServerDbManager : IDbManager
     }
 
     /// <summary>
-    /// Удаление всех полей БД, сбрасывает значение счетчиков.(AUTOINCREMENT / IDENTITY)
+    /// Удаление всех полей таблицы, сбрасывает значение счетчиков.(AUTOINCREMENT / IDENTITY)
     /// </summary>
     public void DeleteList()
     {
@@ -92,12 +94,13 @@ internal class SqlServerDbManager : IDbManager
     /// Получение данных из БД по слову(началу слова)
     /// </summary>
     /// <param name="prefix"> Слово(начало слова) для поиска. </param>
-    /// <returns> Перечисление до 5 найденных слов (в порядке убывания 
+    /// <param name="count"> Количество слов в выборке. </param>
+    /// <returns> Перечисление найденных слов (в порядке убывания 
     /// частоты их упоминания в словаре). </returns>
-    public IEnumerable<WordModel> GetWords(string prefix)
+    public IEnumerable<WordModel> GetWordsByPrefix(string prefix, int count = 5)
     {
         using var sqlConnection = new SqlConnection(_connectionString);
-        var query = $"SELECT TOP(5) {nameof(WordModel.Word)} FROM {_tableName} " +
+        var query = $"SELECT TOP({count}) {nameof(WordModel.Word)} FROM {_tableName} " +
                     $"WHERE {nameof(WordModel.Word)} LIKE N'{prefix}%'";
         return sqlConnection.Query<WordModel>(query);
     }
@@ -105,10 +108,10 @@ internal class SqlServerDbManager : IDbManager
     /// <summary>
     /// Инициализирует базу данных с таблицей если таких нет.
     /// </summary>
-    private void InitDb()
+    private void InitDb(string host)
     {
-        var initConnectionString = $"Server={_host};" +
-                                   $"database={_initDatabase};" +
+        var initConnectionString = $"Server={host};" +
+                                   $"database=master;" +
                                    $"User Id=sa;" +
                                    $"Password={_password};";
         using (var sqlConnection = new SqlConnection(initConnectionString))
@@ -130,7 +133,7 @@ internal class SqlServerDbManager : IDbManager
                             $"BEGIN " +
                             $"CREATE TABLE {_tableName} " +
                                 $"(Id INT PRIMARY KEY IDENTITY (1, 1), " +
-                                $"{nameof(WordModel.Word)} NVARCHAR(15), " +
+                                $"{nameof(WordModel.Word)} NVARCHAR(16), " +
                                 $"{nameof(WordModel.Count)} INT) " +
                             $"END";
             sqlConnection.Execute(initTable);

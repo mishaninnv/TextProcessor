@@ -28,7 +28,8 @@ internal interface IDbManager
     /// Получение данных из БД по слову(началу слова)
     /// </summary>
     /// <param name="prefix"> Слово(начало слова) для поиска. </param>
-    /// <returns> Перечисление до 5 найденных слов (в порядке убывания  
+    /// <param name="count"> Количество слов в выборке. </param>
+    /// <returns> Перечисление найденных слов (в порядке убывания  
     /// частоты их упоминания в словаре). </returns>
-    internal IEnumerable<WordModel> GetWords(string prefix);
+    internal IEnumerable<WordModel> GetWordsByPrefix(string prefix, int count=5);
 }

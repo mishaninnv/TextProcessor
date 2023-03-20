@@ -32,7 +32,6 @@ internal class TcpIpServer : IServer
         try
         {
             tcpListener.Start();
-
             while (true)
             {
                 var tcpClient = await tcpListener.AcceptTcpClientAsync();
@@ -53,7 +52,7 @@ internal class TcpIpServer : IServer
     {
         var stream = tcpClient.GetStream();
         var response = new List<byte>();
-        var bytesRead = 10;
+        var bytesRead = 15;
         while (true)
         {
             while ((bytesRead = stream.ReadByte()) != '\n')
@@ -70,7 +69,7 @@ internal class TcpIpServer : IServer
                 && queryValues[0].ToLower().Equals("get"))
             {
                 var query = _managerDb
-                    .GetWords(queryValues[1].ToLower())
+                    .GetWordsByPrefix(queryValues[1].ToLower())
                     .Select(x => x.Word)
                     .ToArray();
                 result += string.Join(" ", query);
